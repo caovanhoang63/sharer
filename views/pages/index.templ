@@ -1,0 +1,133 @@
+package pages
+
+import "sharer/views/layouts"
+import "sharer/views/components"
+import "strconv"
+import "time"
+
+type PageData struct {
+	ID           uint
+	Slug         string
+	Title        string
+	CategoryID   *uint
+	CategoryName *string
+	CreatedAt    time.Time
+}
+
+templ Index(pages []*PageData, currentPage int, totalPages int64, total int64, hasNext bool, hasPrev bool) {
+	@layouts.Base("Shared Pages - HTML Sharer") {
+		@components.Navbar()
+		<div class="container mx-auto px-4 py-8">
+			<div class="max-w-7xl mx-auto">
+				<div class="text-center mb-8">
+					<h1 class="text-4xl font-bold mb-4">Shared Pages</h1>
+					
+					<!-- Category Filter -->
+					<div class="flex justify-center mb-6">
+						<div class="form-control w-full max-w-xs">
+							<label class="label">
+								<span class="label-text">Filter by category:</span>
+							</label>
+							<select 
+								class="select select-bordered"
+								hx-get="/pages"
+								hx-trigger="change"
+								hx-target="body"
+								hx-swap="outerHTML"
+								hx-include="[name='category']"
+								name="category"
+							>
+								<option value="">All categories</option>
+								<!-- Categories will be loaded here -->
+							</select>
+						</div>
+					</div>
+					
+					if len(pages) > 0 {
+						<div class="stats shadow">
+							<div class="stat">
+								<div class="stat-title">Total Pages</div>
+								<div class="stat-value">{ strconv.FormatInt(total, 10) }</div>
+								<div class="stat-desc">Showing { strconv.Itoa(len(pages)) } on this page</div>
+							</div>
+						</div>
+					}
+				</div>
+				
+				if len(pages) > 0 {
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+						for _, p := range pages {
+							<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+								<div class="card-body">
+									<h2 class="card-title text-lg">{ p.Title }</h2>
+									<div class="badge badge-outline font-mono text-xs">{ p.Slug }</div>
+									<p class="text-sm text-base-content/70">
+										Created: { p.CreatedAt.Format("Jan 2, 2006 at 3:04 PM") }
+									</p>
+									<div class="card-actions justify-end mt-4">
+										<a 
+											href={ templ.URL("/shared/" + p.Slug) } 
+											target="_blank" 
+											class="btn btn-primary btn-sm"
+										>
+											View Page
+										</a>
+										<button 
+											class="btn btn-outline btn-sm"
+											onclick="navigator.clipboard.writeText(window.location.origin + '/shared/' + this.dataset.slug)"
+											data-slug={ p.Slug }
+										>
+											Copy Link
+										</button>
+									</div>
+								</div>
+							</div>
+						}
+					</div>
+					
+					if totalPages > 1 {
+						<div class="flex justify-center">
+							<div class="join">
+								if hasPrev {
+									<a 
+										href={ templ.URL("/pages?page=" + strconv.Itoa(currentPage-1)) }
+										class="join-item btn"
+									>
+										« Previous
+									</a>
+								} else {
+									<button class="join-item btn btn-disabled">« Previous</button>
+								}
+								
+								<button class="join-item btn btn-active">
+									Page { strconv.Itoa(currentPage) } of { strconv.FormatInt(totalPages, 10) }
+								</button>
+								
+								if hasNext {
+									<a 
+										href={ templ.URL("/pages?page=" + strconv.Itoa(currentPage+1)) }
+										class="join-item btn"
+									>
+										Next »
+									</a>
+								} else {
+									<button class="join-item btn btn-disabled">Next »</button>
+								}
+							</div>
+						</div>
+					}
+				} else {
+					<div class="hero min-h-[400px]">
+						<div class="hero-content text-center">
+							<div class="max-w-md">
+								<h2 class="text-2xl font-bold mb-4">No shared pages yet</h2>
+								<p class="mb-6">Be the first to share an HTML page!</p>
+								<a href="/" class="btn btn-primary">Share Your First Page</a>
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	}
+}

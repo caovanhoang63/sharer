@@ -43,6 +43,7 @@ func (s *service) CreatePage(ctx context.Context, req *PageCreate) (*PageRespons
 		Slug:        slug,
 		HTMLContent: req.HTMLContent,
 		Title:       title,
+		CategoryID:  req.CategoryID,
 	}
 
 	// Save to repository
@@ -87,6 +88,30 @@ func (s *service) GetPagesList(ctx context.Context, page, pageSize int) ([]*Page
 	}
 
 	total, err := s.repo.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return pages, total, nil
+}
+
+// GetPagesByCategory retrieves a paginated list of pages filtered by category
+func (s *service) GetPagesByCategory(ctx context.Context, categoryID uint, page, pageSize int) ([]*PageList, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+
+	pages, err := s.repo.ListByCategory(ctx, categoryID, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total, err := s.repo.CountByCategory(ctx, categoryID)
 	if err != nil {
 		return nil, 0, err
 	}

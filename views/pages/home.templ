@@ -1,0 +1,74 @@
+package pages
+
+import "sharer/views/layouts"
+import "sharer/views/components"
+
+templ Home() {
+	@layouts.Base("HTML Sharer") {
+		@components.Navbar()
+		<div class="container mx-auto px-4 py-8">
+			<div class="max-w-4xl mx-auto">
+				<div class="card bg-base-100 shadow-xl">
+					<div class="card-body">
+						<h1 class="card-title text-3xl font-bold text-center mb-8">HTML Sharer</h1>
+						
+						<form 
+							hx-post="/" 
+							hx-target="#result" 
+							hx-indicator="#loading"
+							hx-encoding="multipart/form-data"
+							class="space-y-6"
+							enctype="multipart/form-data"
+						>
+							<div class="form-control">
+								<label class="label">
+									<span class="label-text font-semibold">Paste your HTML code:</span>
+								</label>
+								<textarea 
+									name="htmlContent"
+									class="textarea textarea-bordered h-48 font-mono text-sm"
+									placeholder="<!DOCTYPE html>&#10;<html>&#10;<head>&#10;    <title>My Page</title>&#10;</head>&#10;<body>&#10;    <h1>Hello World!</h1>&#10;</body>&#10;</html>"
+								></textarea>
+							</div>
+							
+							<div class="form-control">
+								<label class="label">
+									<span class="label-text font-semibold">Or upload an HTML file:</span>
+								</label>
+								<input 
+									type="file" 
+									name="htmlFile"
+									accept=".html,.htm"
+									class="file-input file-input-bordered w-full"
+								/>
+							</div>
+							
+							<div class="form-control">
+								<label class="label">
+									<span class="label-text font-semibold">Category (optional):</span>
+								</label>
+								<select 
+									name="category_id"
+									class="select select-bordered w-full"
+									hx-get="/api/categories"
+									hx-trigger="load"
+									hx-target="this"
+									hx-swap="innerHTML"
+								>
+									<option value="">Select a category...</option>
+								</select>
+							</div>
+							
+							<button type="submit" class="btn btn-primary btn-block">
+								<span class="loading loading-spinner loading-sm htmx-indicator" id="loading"></span>
+								Create Link
+							</button>
+						</form>
+						
+						<div id="result" class="mt-6"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

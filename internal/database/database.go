@@ -5,7 +5,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	
+
+	"sharer/internal/modules/category"
 	"sharer/internal/modules/page"
 	"sharer/internal/modules/user"
 )
@@ -32,6 +33,7 @@ func NewConnection(config Config) (*gorm.DB, error) {
 func Migrate(db *gorm.DB) error {
 	// Auto-migrate all models
 	err := db.AutoMigrate(
+		&category.Category{},
 		&page.Page{},
 		&user.User{}, // Example model, not implemented
 	)

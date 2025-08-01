@@ -16,8 +16,14 @@ type Repository interface {
 	// List retrieves a paginated list of pages
 	List(ctx context.Context, offset, limit int) ([]*PageList, error)
 
+	// ListByCategory retrieves a paginated list of pages filtered by category
+	ListByCategory(ctx context.Context, categoryID uint, offset, limit int) ([]*PageList, error)
+
 	// Count returns the total number of pages
 	Count(ctx context.Context) (int64, error)
+
+	// CountByCategory returns the total number of pages in a category
+	CountByCategory(ctx context.Context, categoryID uint) (int64, error)
 
 	// Update updates a page by ID
 	Update(ctx context.Context, id uint, updates *PageUpdate) error
@@ -39,6 +45,9 @@ type Service interface {
 
 	// GetPagesList retrieves a paginated list of pages
 	GetPagesList(ctx context.Context, page, pageSize int) ([]*PageList, int64, error)
+
+	// GetPagesByCategory retrieves a paginated list of pages filtered by category
+	GetPagesByCategory(ctx context.Context, categoryID uint, page, pageSize int) ([]*PageList, int64, error)
 
 	// GenerateUniqueSlug generates a unique slug for a new page
 	GenerateUniqueSlug(ctx context.Context) (string, error)

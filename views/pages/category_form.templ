@@ -1,0 +1,132 @@
+package pages
+
+import "sharer/views/layouts"
+import "sharer/views/components"
+import "strconv"
+
+type CategoryFormData struct {
+	ID          uint
+	Name        string
+	Description string
+	IsEdit      bool
+}
+
+templ CategoryForm(data *CategoryFormData) {
+	if data.IsEdit {
+		@layouts.Base("Edit Category - HTML Sharer") {
+			@categoryFormContent(data)
+		}
+	} else {
+		@layouts.Base("Create Category - HTML Sharer") {
+			@categoryFormContent(data)
+		}
+	}
+}
+
+templ categoryFormContent(data *CategoryFormData) {
+	@components.Navbar()
+	<div class="container mx-auto px-4 py-8">
+		<div class="max-w-2xl mx-auto">
+			<div class="card bg-base-100 shadow-xl">
+				<div class="card-body">
+					<div class="flex items-center justify-between mb-6">
+						<h1 class="text-3xl font-bold">
+							if data.IsEdit {
+								Edit Category
+							} else {
+								Create Category
+							}
+						</h1>
+						<a href="/categories" class="btn btn-outline">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+							</svg>
+							Back to Categories
+						</a>
+					</div>
+					
+					if data.IsEdit {
+						<form 
+							hx-put={ "/categories/" + strconv.FormatUint(uint64(data.ID), 10) }
+							hx-target="#result" 
+							hx-indicator="#loading"
+							class="space-y-6"
+						>
+							@categoryFormFields(data)
+						</form>
+					} else {
+						<form 
+							hx-post="/categories"
+							hx-target="#result" 
+							hx-indicator="#loading"
+							class="space-y-6"
+						>
+							@categoryFormFields(data)
+						</form>
+					}
+					
+					<div id="result" class="mt-6"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ categoryFormFields(data *CategoryFormData) {
+	<div class="form-control">
+		<label class="label">
+			<span class="label-text font-semibold">Category Name *</span>
+		</label>
+		<input 
+			type="text" 
+			name="name"
+			value={ data.Name }
+			placeholder="Enter category name"
+			class="input input-bordered w-full"
+			required
+		/>
+		<label class="label">
+			<span class="label-text-alt">Choose a unique name for this category</span>
+		</label>
+	</div>
+	
+	<div class="form-control">
+		<label class="label">
+			<span class="label-text font-semibold">Description</span>
+		</label>
+		<textarea 
+			name="description"
+			placeholder="Enter category description (optional)"
+			class="textarea textarea-bordered h-24"
+		>{ data.Description }</textarea>
+		<label class="label">
+			<span class="label-text-alt">Provide a brief description of what this category is for</span>
+		</label>
+	</div>
+	
+	<div class="form-control mt-8">
+		<button type="submit" class="btn btn-primary btn-block">
+			<span class="loading loading-spinner loading-sm htmx-indicator" id="loading"></span>
+			if data.IsEdit {
+				Update Category
+			} else {
+				Create Category
+			}
+		</button>
+	</div>
+}
+
+templ CategoryCreateForm() {
+	@CategoryForm(&CategoryFormData{
+		IsEdit: false,
+	})
+}
+
+templ CategoryEditForm(id uint, name string, description string) {
+	@CategoryForm(&CategoryFormData{
+		ID:          id,
+		Name:        name,
+		Description: description,
+		IsEdit:      true,
+	})
+}

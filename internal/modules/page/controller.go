@@ -9,6 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"sharer/views/components"
+	"sharer/views/pages"
 )
 
 // Controller handles HTTP requests for page operations
@@ -23,9 +26,8 @@ func NewController(service Service) *Controller {
 
 // Home handles the home page display
 func (c *Controller) Home(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "home.html", gin.H{
-		"title": "HTML Sharer",
-	})
+	ctx.Header("Content-Type", "text/html")
+	pages.Home().Render(ctx.Request.Context(), ctx.Writer)
 }
 
 // Index handles the index page showing list of shared pages
@@ -44,28 +46,70 @@ func (c *Controller) Index(ctx *gin.Context) {
 		}
 	}
 
-	pages, total, err := c.service.GetPagesList(ctx.Request.Context(), page, pageSize)
+	// Check for category filter
+	var pagesList []*pages.PageData
+	var total int64
+	var err error
+
+	if categoryIDStr := ctx.Query("category"); categoryIDStr != "" {
+		if categoryID, parseErr := strconv.ParseUint(categoryIDStr, 10, 32); parseErr == nil {
+			pagesListRaw, totalRaw, serviceErr := c.service.GetPagesByCategory(ctx.Request.Context(), uint(categoryID), page, pageSize)
+			pagesList = make([]*pages.PageData, len(pagesListRaw))
+			for i, p := range pagesListRaw {
+				pagesList[i] = &pages.PageData{
+					ID:           p.ID,
+					Slug:         p.Slug,
+					Title:        p.Title,
+					CategoryID:   p.CategoryID,
+					CategoryName: p.CategoryName,
+					CreatedAt:    p.CreatedAt,
+				}
+			}
+			total = totalRaw
+			err = serviceErr
+		} else {
+			ctx.Status(http.StatusBadRequest)
+			return
+		}
+	} else {
+		pagesListRaw, totalRaw, serviceErr := c.service.GetPagesList(ctx.Request.Context(), page, pageSize)
+		pagesList = make([]*pages.PageData, len(pagesListRaw))
+		for i, p := range pagesListRaw {
+			pagesList[i] = &pages.PageData{
+				ID:           p.ID,
+				Slug:         p.Slug,
+				Title:        p.Title,
+				CategoryID:   p.CategoryID,
+				CategoryName: p.CategoryName,
+				CreatedAt:    p.CreatedAt,
+			}
+		}
+		total = totalRaw
+		err = serviceErr
+	}
+
 	if err != nil {
-		ctx.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"title": "Error",
-			"error": "Failed to load pages",
-		})
+		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 
-	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+	// Convert PageList to PageData
+	pagesData := make([]*pages.PageData, len(pagesList))
+	for i, p := range pagesList {
+		pagesData[i] = &pages.PageData{
+			ID:        p.ID,
+			Slug:      p.Slug,
+			Title:     p.Title,
+			CreatedAt: p.CreatedAt,
+		}
+	}
 
-	ctx.HTML(http.StatusOK, "index.html", gin.H{
-		"title":       "Shared Pages",
-		"pages":       pages,
-		"currentPage": page,
-		"totalPages":  totalPages,
-		"total":       total,
-		"hasNext":     page < int(totalPages),
-		"hasPrev":     page > 1,
-		"nextPage":    page + 1,
-		"prevPage":    page - 1,
-	})
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+	hasNext := page < int(totalPages)
+	hasPrev := page > 1
+
+	ctx.Header("Content-Type", "text/html")
+	pages.Index(pagesData, page, totalPages, total, hasNext, hasPrev).Render(ctx.Request.Context(), ctx.Writer)
 }
 
 // CreateFromForm handles form submission for creating pages
@@ -108,8 +152,20 @@ func (c *Controller) CreateFromForm(ctx *gin.Context) {
 		return
 	}
 
+	// Get category ID from form if provided
+	var categoryID *uint
+	if categoryIDStr := ctx.PostForm("category_id"); categoryIDStr != "" {
+		if parsed, err := strconv.ParseUint(categoryIDStr, 10, 32); err == nil {
+			id := uint(parsed)
+			categoryID = &id
+		}
+	}
+
 	// Create page using service
-	req := &PageCreate{HTMLContent: htmlContent}
+	req := &PageCreate{
+		HTMLContent: htmlContent,
+		CategoryID:  categoryID,
+	}
 	response, err := c.service.CreatePage(ctx.Request.Context(), req)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, "Error creating page")
@@ -121,9 +177,11 @@ func (c *Controller) CreateFromForm(ctx *gin.Context) {
 		return
 	}
 
-	// Redirect to success page or return JSON
-	if ctx.GetHeader("Accept") == "application/json" {
-		ctx.JSON(http.StatusOK, response)
+	// Return success component for htmx or redirect for regular form
+	if ctx.GetHeader("HX-Request") == "true" {
+		fullURL := "http://" + ctx.Request.Host + response.URL
+		ctx.Header("Content-Type", "text/html")
+		components.Success(fullURL).Render(ctx.Request.Context(), ctx.Writer)
 	} else {
 		ctx.Redirect(http.StatusSeeOther, "/?success="+strings.TrimPrefix(response.URL, "/shared/"))
 	}
@@ -133,22 +191,25 @@ func (c *Controller) CreateFromForm(ctx *gin.Context) {
 func (c *Controller) CreateFromAPI(ctx *gin.Context) {
 	var req PageCreate
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, PageResponse{Error: "Invalid JSON"})
+		ctx.String(http.StatusBadRequest, "Invalid JSON")
 		return
 	}
 
 	response, err := c.service.CreatePage(ctx.Request.Context(), &req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, PageResponse{Error: "Internal server error"})
+		ctx.String(http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
 	if response.Error != "" {
-		ctx.JSON(http.StatusBadRequest, *response)
+		ctx.String(http.StatusBadRequest, response.Error)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, *response)
+	// Return success component for htmx
+	fullURL := ctx.Request.Host + response.URL
+	ctx.Header("Content-Type", "text/html")
+	components.Success(fullURL).Render(ctx.Request.Context(), ctx.Writer)
 }
 
 // GetSharedContent handles requests to view shared content
@@ -174,7 +235,7 @@ func (c *Controller) GetSharedContent(ctx *gin.Context) {
 
 // serve404 renders a 404 error page
 func (c *Controller) serve404(ctx *gin.Context) {
-	ctx.HTML(http.StatusNotFound, "404.html", gin.H{
-		"title": "Page Not Found",
-	})
+	ctx.Status(http.StatusNotFound)
+	ctx.Header("Content-Type", "text/html")
+	pages.NotFound().Render(ctx.Request.Context(), ctx.Writer)
 }

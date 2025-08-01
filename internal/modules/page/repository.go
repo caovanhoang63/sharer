@@ -44,9 +44,29 @@ func (r *repository) GetByID(ctx context.Context, id uint) (*Page, error) {
 func (r *repository) List(ctx context.Context, offset, limit int) ([]*PageList, error) {
 	var pages []*PageList
 	err := r.db.WithContext(ctx).
-		Model(&Page{}).
-		Select("id, slug, title, created_at").
-		Order("created_at DESC").
+		Table("shared_content p").
+		Select("p.id, p.slug, p.title, p.category_id, c.name as category_name, p.created_at").
+		Joins("LEFT JOIN categories c ON p.category_id = c.id").
+		Order("p.created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&pages).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return pages, nil
+}
+
+// ListByCategory retrieves a paginated list of pages filtered by category
+func (r *repository) ListByCategory(ctx context.Context, categoryID uint, offset, limit int) ([]*PageList, error) {
+	var pages []*PageList
+	err := r.db.WithContext(ctx).
+		Table("shared_content p").
+		Select("p.id, p.slug, p.title, p.category_id, c.name as category_name, p.created_at").
+		Joins("LEFT JOIN categories c ON p.category_id = c.id").
+		Where("p.category_id = ?", categoryID).
+		Order("p.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&pages).Error
@@ -61,6 +81,13 @@ func (r *repository) List(ctx context.Context, offset, limit int) ([]*PageList, 
 func (r *repository) Count(ctx context.Context) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&Page{}).Count(&count).Error
+	return count, err
+}
+
+// CountByCategory returns the total number of pages in a category
+func (r *repository) CountByCategory(ctx context.Context, categoryID uint) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&Page{}).Where("category_id = ?", categoryID).Count(&count).Error
 	return count, err
 }
 

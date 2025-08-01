@@ -11,6 +11,7 @@ type Page struct {
 	Slug        string         `gorm:"uniqueIndex;not null" json:"slug"`
 	HTMLContent string         `gorm:"type:text;not null" json:"html_content"`
 	Title       string         `gorm:"size:255" json:"title,omitempty"`
+	CategoryID  *uint          `gorm:"index" json:"category_id,omitempty"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
@@ -20,6 +21,7 @@ type Page struct {
 type PageCreate struct {
 	HTMLContent string `json:"html_content" binding:"required"`
 	Title       string `json:"title,omitempty"`
+	CategoryID  *uint  `json:"category_id,omitempty"`
 }
 
 // PageUpdate represents the data that can be updated for a page
@@ -30,20 +32,24 @@ type PageUpdate struct {
 
 // PageList represents a simplified page for listing purposes
 type PageList struct {
-	ID        uint      `json:"id"`
-	Slug      string    `json:"slug"`
-	Title     string    `json:"title"`
-	CreatedAt time.Time `json:"created_at"`
+	ID           uint      `json:"id"`
+	Slug         string    `json:"slug"`
+	Title        string    `json:"title"`
+	CategoryID   *uint     `json:"category_id,omitempty"`
+	CategoryName *string   `json:"category_name,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // PageDetail represents detailed page information
 type PageDetail struct {
-	ID          uint      `json:"id"`
-	Slug        string    `json:"slug"`
-	HTMLContent string    `json:"html_content"`
-	Title       string    `json:"title"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID           uint      `json:"id"`
+	Slug         string    `json:"slug"`
+	HTMLContent  string    `json:"html_content"`
+	Title        string    `json:"title"`
+	CategoryID   *uint     `json:"category_id,omitempty"`
+	CategoryName *string   `json:"category_name,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // PageResponse represents the API response for page operations

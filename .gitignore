@@ -96,3 +96,5 @@ DDict Logo
 
 sharer
 sharer.db
+*templ.go
+*.log
