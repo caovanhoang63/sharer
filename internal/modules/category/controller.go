@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"sharer/views/components"
 	"sharer/views/pages"
 )
 
@@ -89,7 +90,10 @@ func (c *Controller) Store(ctx *gin.Context) {
 
 	// Return success response or redirect
 	if ctx.GetHeader("HX-Request") == "true" {
-		ctx.JSON(http.StatusOK, response)
+		// For modal requests, return HTML that triggers modal close and page refresh
+		ctx.Header("Content-Type", "text/html")
+		ctx.Header("HX-Trigger", "closeModal")
+		ctx.String(http.StatusOK, `<script>document.getElementById('create_category_modal').close(); window.location.reload();</script>`)
 	} else {
 		ctx.Redirect(http.StatusSeeOther, "/categories")
 	}
@@ -141,6 +145,29 @@ func (c *Controller) Edit(ctx *gin.Context) {
 	pages.CategoryEditForm(category.ID, category.Name, category.Description).Render(ctx.Request.Context(), ctx.Writer)
 }
 
+// EditModal handles category edit modal content display
+func (c *Controller) EditModal(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+		return
+	}
+
+	category, err := c.service.GetCategoryByID(ctx.Request.Context(), uint(id))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.Status(http.StatusNotFound)
+		} else {
+			ctx.Status(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	ctx.Header("Content-Type", "text/html")
+	components.CategoryEditModalContent(category.ID, category.Name, category.Description).Render(ctx.Request.Context(), ctx.Writer)
+}
+
 // Update handles category update from form submission
 func (c *Controller) Update(ctx *gin.Context) {
 	idStr := ctx.Param("id")
@@ -169,7 +196,10 @@ func (c *Controller) Update(ctx *gin.Context) {
 
 	// Return success response or redirect
 	if ctx.GetHeader("HX-Request") == "true" {
-		ctx.JSON(http.StatusOK, response)
+		// For modal requests, return HTML that triggers modal close and page refresh
+		ctx.Header("Content-Type", "text/html")
+		ctx.Header("HX-Trigger", "closeModal")
+		ctx.String(http.StatusOK, `<script>document.getElementById('edit_category_modal').close(); window.location.reload();</script>`)
 	} else {
 		ctx.Redirect(http.StatusSeeOther, "/categories")
 	}

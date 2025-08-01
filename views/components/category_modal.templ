@@ -1,0 +1,165 @@
+package components
+
+import "strconv"
+
+type CategoryModalData struct {
+	ID          uint
+	Name        string
+	Description string
+	IsEdit      bool
+}
+
+templ CategoryModal(data *CategoryModalData) {
+	<dialog id="category_modal" class="modal">
+		<div class="modal-box">
+			<form method="dialog">
+				<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+			</form>
+			<h3 class="font-bold text-lg">
+				if data.IsEdit {
+					Edit Category
+				} else {
+					Create Category
+				}
+			</h3>
+			
+			if data.IsEdit {
+				<form 
+					hx-put={ "/categories/" + strconv.FormatUint(uint64(data.ID), 10) }
+					hx-target="#modal-result" 
+					hx-indicator="#modal-loading"
+					class="space-y-4 mt-4"
+				>
+					@categoryModalFields(data)
+				</form>
+			} else {
+				<form 
+					hx-post="/categories"
+					hx-target="#modal-result" 
+					hx-indicator="#modal-loading"
+					class="space-y-4 mt-4"
+				>
+					@categoryModalFields(data)
+				</form>
+			}
+			
+			<div id="modal-result" class="mt-4"></div>
+		</div>
+		<form method="dialog" class="modal-backdrop">
+			<button>close</button>
+		</form>
+	</dialog>
+}
+
+templ categoryModalFields(data *CategoryModalData) {
+	<div class="form-control">
+		<label class="label">
+			<span class="label-text font-semibold">Category Name *</span>
+		</label>
+		<input 
+			type="text" 
+			name="name"
+			value={ data.Name }
+			placeholder="Enter category name"
+			class="input input-bordered w-full"
+			required
+		/>
+		<label class="label">
+			<span class="label-text-alt">Choose a unique name for this category</span>
+		</label>
+	</div>
+	
+	<div class="form-control">
+		<label class="label">
+			<span class="label-text font-semibold">Description</span>
+		</label>
+		<textarea 
+			name="description"
+			placeholder="Enter category description (optional)"
+			class="textarea textarea-bordered h-24"
+		>{ data.Description }</textarea>
+		<label class="label">
+			<span class="label-text-alt">Provide a brief description of what this category is for</span>
+		</label>
+	</div>
+	
+	<div class="form-control mt-6">
+		<button type="submit" class="btn btn-primary btn-block">
+			<span class="loading loading-spinner loading-sm htmx-indicator" id="modal-loading"></span>
+			if data.IsEdit {
+				Update Category
+			} else {
+				Create Category
+			}
+		</button>
+	</div>
+}
+
+templ CategoryCreateModal() {
+	@CategoryModal(&CategoryModalData{
+		IsEdit: false,
+	})
+}
+
+templ CategoryEditModal(id uint, name string, description string) {
+	@CategoryModal(&CategoryModalData{
+		ID:          id,
+		Name:        name,
+		Description: description,
+		IsEdit:      true,
+	})
+}
+
+templ CategoryEditModalContent(id uint, name string, description string) {
+	<form method="dialog">
+		<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+	</form>
+	<h3 class="font-bold text-lg">Edit Category</h3>
+	
+	<form 
+		hx-put={ "/categories/" + strconv.FormatUint(uint64(id), 10) }
+		hx-target="#edit-modal-result" 
+		hx-indicator="#edit-modal-loading"
+		class="space-y-4 mt-4"
+	>
+		<div class="form-control">
+			<label class="label">
+				<span class="label-text font-semibold">Category Name *</span>
+			</label>
+			<input 
+				type="text" 
+				name="name"
+				value={ name }
+				placeholder="Enter category name"
+				class="input input-bordered w-full"
+				required
+			/>
+			<label class="label">
+				<span class="label-text-alt">Choose a unique name for this category</span>
+			</label>
+		</div>
+		
+		<div class="form-control">
+			<label class="label">
+				<span class="label-text font-semibold">Description</span>
+			</label>
+			<textarea 
+				name="description"
+				placeholder="Enter category description (optional)"
+				class="textarea textarea-bordered h-24"
+			>{ description }</textarea>
+			<label class="label">
+				<span class="label-text-alt">Provide a brief description of what this category is for</span>
+			</label>
+		</div>
+		
+		<div class="form-control mt-6">
+			<button type="submit" class="btn btn-primary btn-block">
+				<span class="loading loading-spinner loading-sm htmx-indicator" id="edit-modal-loading"></span>
+				Update Category
+			</button>
+		</div>
+	</form>
+	
+	<div id="edit-modal-result" class="mt-4"></div>
+}

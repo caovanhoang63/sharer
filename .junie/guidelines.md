@@ -197,3 +197,4 @@ docker run -p 8080:8080 sharer
 - **Test both web UI and API endpoints** when making changes
 - **Use Context7 MCP** for reading library documentation when working with external libraries or frameworks
 - **Use Exa for web search** when links are provided in prompts to gather additional context and information
+- **Just Use Exa when Context7 not found the document**

@@ -57,6 +57,7 @@ func main() {
 	r.POST("/categories", categoryController.Store)
 	r.GET("/categories/:id", categoryController.Show)
 	r.GET("/categories/:id/edit", categoryController.Edit)
+	r.GET("/categories/:id/edit-modal", categoryController.EditModal)
 	r.PUT("/categories/:id", categoryController.Update)
 	r.DELETE("/categories/:id", categoryController.Delete)
 	r.GET("/api/categories", categoryController.GetAllForDropdown)
