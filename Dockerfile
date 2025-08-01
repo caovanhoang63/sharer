@@ -13,8 +13,14 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
+# Install Templ CLI
+RUN go install github.com/a-h/templ/cmd/templ@latest
+
 # Copy source code
 COPY . .
+
+# Generate Templ templates
+RUN templ generate
 
 # Build the application
 RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o sharer main.go
@@ -31,9 +37,6 @@ WORKDIR /app
 # Copy binary from builder stage
 COPY --from=builder /app/sharer .
 
-# Copy templates directory
-COPY --from=builder /app/templates ./templates
-
 # Create directory for SQLite database
 RUN mkdir -p /app/data
 
@@ -42,7 +45,6 @@ EXPOSE 8080
 
 # Set environment variables
 ENV GIN_MODE=release
-ENV DB_PATH=/app/data/sharer.db
 
 # Run the application
 CMD ["./sharer"]
