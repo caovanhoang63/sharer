@@ -30,15 +30,14 @@ templ Index(pages []*PageData, currentPage int, totalPages int64, total int64, h
 							</label>
 							<select 
 								class="select select-bordered"
-								hx-get="/pages"
-								hx-trigger="change"
-								hx-target="body"
-								hx-swap="outerHTML"
-								hx-include="[name='category']"
 								name="category"
+								hx-get="/api/categories"
+								hx-trigger="load"
+								hx-target="this"
+								hx-swap="innerHTML"
+								onchange="window.location.href = this.value ? '/pages?category=' + this.value : '/pages'"
 							>
 								<option value="">All categories</option>
-								<!-- Categories will be loaded here -->
 							</select>
 						</div>
 					</div>

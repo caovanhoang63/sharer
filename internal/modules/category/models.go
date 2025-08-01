@@ -17,14 +17,14 @@ type Category struct {
 
 // CategoryCreate represents the data needed to create a new category
 type CategoryCreate struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description,omitempty"`
+	Name        string `json:"name" form:"name" binding:"required"`
+	Description string `json:"description,omitempty" form:"description"`
 }
 
 // CategoryUpdate represents the data that can be updated for a category
 type CategoryUpdate struct {
-	Name        *string `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
+	Name        *string `json:"name,omitempty" form:"name"`
+	Description *string `json:"description,omitempty" form:"description"`
 }
 
 // CategoryList represents a simplified category for listing purposes

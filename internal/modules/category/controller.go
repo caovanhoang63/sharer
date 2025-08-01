@@ -7,6 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"sharer/views/pages"
 )
 
 // Controller handles HTTP requests for category operations
@@ -41,25 +43,29 @@ func (c *Controller) Index(ctx *gin.Context) {
 		return
 	}
 
+	// Convert CategoryList to CategoryData
+	categoriesData := make([]*pages.CategoryData, len(categoriesList))
+	for i, cat := range categoriesList {
+		categoriesData[i] = &pages.CategoryData{
+			ID:          cat.ID,
+			Name:        cat.Name,
+			Description: cat.Description,
+			CreatedAt:   cat.CreatedAt,
+		}
+	}
+
 	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
 	hasNext := page < int(totalPages)
 	hasPrev := page > 1
 
-	// TODO: Render category index template
-	ctx.JSON(http.StatusOK, gin.H{
-		"categories":  categoriesList,
-		"currentPage": page,
-		"totalPages":  totalPages,
-		"total":       total,
-		"hasNext":     hasNext,
-		"hasPrev":     hasPrev,
-	})
+	ctx.Header("Content-Type", "text/html")
+	pages.Categories(categoriesData, page, totalPages, total, hasNext, hasPrev).Render(ctx.Request.Context(), ctx.Writer)
 }
 
 // Create handles category creation form display
 func (c *Controller) Create(ctx *gin.Context) {
-	// TODO: Render category create template
-	ctx.JSON(http.StatusOK, gin.H{"message": "Category create form"})
+	ctx.Header("Content-Type", "text/html")
+	pages.CategoryCreateForm().Render(ctx.Request.Context(), ctx.Writer)
 }
 
 // Store handles category creation from form submission
@@ -98,18 +104,18 @@ func (c *Controller) Show(ctx *gin.Context) {
 		return
 	}
 
-	category, err := c.service.GetCategoryByID(ctx.Request.Context(), uint(id))
+	_, err = c.service.GetCategoryByID(ctx.Request.Context(), uint(id))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+			ctx.Status(http.StatusNotFound)
 		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			ctx.Status(http.StatusInternalServerError)
 		}
 		return
 	}
 
-	// TODO: Render category show template
-	ctx.JSON(http.StatusOK, category)
+	// For now, redirect to categories list since we don't have a show template
+	ctx.Redirect(http.StatusSeeOther, "/categories")
 }
 
 // Edit handles category edit form display
@@ -124,15 +130,15 @@ func (c *Controller) Edit(ctx *gin.Context) {
 	category, err := c.service.GetCategoryByID(ctx.Request.Context(), uint(id))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+			ctx.Status(http.StatusNotFound)
 		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			ctx.Status(http.StatusInternalServerError)
 		}
 		return
 	}
 
-	// TODO: Render category edit template
-	ctx.JSON(http.StatusOK, category)
+	ctx.Header("Content-Type", "text/html")
+	pages.CategoryEditForm(category.ID, category.Name, category.Description).Render(ctx.Request.Context(), ctx.Writer)
 }
 
 // Update handles category update from form submission
